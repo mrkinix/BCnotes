@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>BC Stream</title>
     <link rel="icon" type="image/png" href="notes.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="notes.png">
+    
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -20,28 +25,14 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
         textarea:focus { outline: none !important; box-shadow: none !important; }
-        /* Smooth transitions for mobile menu */
+        
+        /* Code Block & Width Blowout Fix */
+        .prose { word-break: break-word; overflow-wrap: break-word; }
+        .prose pre { white-space: pre !important; overflow-x: auto !important; max-width: 100% !important; display: block !important; padding: 1rem; border-radius: 0.5rem; background: #18181b; }
+        .prose code { white-space: pre-wrap !important; word-break: break-all !important; }
+        
         .menu-enter-active, .menu-leave-active { transition: transform 0.3s ease; }
         .menu-enter-from, .menu-leave-to { transform: translateX(-100%); }
-        /* Ensure the markdown container itself respects boundaries */
-.prose {
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Force Code Blocks to scroll horizontally and NOT expand the parent */
-.prose pre {
-    white-space: pre !important; /* Keep code formatting */
-    overflow-x: auto !important; /* Enable scrollbar */
-    max-width: 100% !important;  /* Constrain to parent width */
-    display: block !important;
-}
-
-/* Fix for long URLs or strings without spaces */
-.prose code {
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
-}
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 overflow-hidden font-sans">
@@ -49,10 +40,10 @@
 <div id="app" v-cloak class="flex h-screen w-full relative">
     
     <transition name="menu">
-        <aside v-if="sidebarOpen" class="fixed inset-0 z-50 bg-white dark:bg-zinc-950 flex flex-col p-6 overflow-hidden md:relative md:w-80 md:translate-x-0 md:flex md:border-r md:border-zinc-200 dark:md:border-zinc-800">
+        <aside v-if="sidebarOpen" class="fixed inset-0 z-50 bg-white dark:bg-zinc-950 flex flex-col p-6 md:relative md:w-80 md:translate-x-0 md:flex md:border-r md:border-zinc-200 dark:md:border-zinc-800">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-3">
-                    <img src="notes.png" class="w-8 h-8 rounded-lg" onerror="this.style.display='none'">
+                    <img src="notes.png" class="w-8 h-8 rounded-lg" alt="Logo">
                     <h1 class="text-xl font-bold tracking-tighter">BC</h1>
                 </div>
                 <button @click="sidebarOpen = false" class="md:hidden text-2xl">✕</button>
@@ -60,13 +51,13 @@
 
             <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
                 <div class="mb-8">
-                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Folders <button @click="createFolder" class="text-lg">+</button></div>
-                    <div v-for="f in folders" @click="activeFolderId = f.id" :class="['p-3 rounded-xl mb-2 cursor-pointer transition-all', activeFolderId === f.id ? 'bg-zinc-100 dark:bg-zinc-900' : 'text-zinc-500']">
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4 px-2">Folders <button @click="createFolder" class="text-lg">+</button></div>
+                    <div v-for="f in folders" @click="activeFolderId = f.id" :class="['p-3 rounded-xl mb-2 cursor-pointer transition-all', activeFolderId === f.id ? 'bg-zinc-100 dark:bg-zinc-900 font-semibold' : 'text-zinc-500']">
                         📁 {{ f.name }}
                     </div>
                 </div>
                 <div>
-                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Streams <button @click="createNote" class="text-lg">+</button></div>
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4 px-2">Streams <button @click="createNote" class="text-lg">+</button></div>
                     <div v-for="n in filteredNotes" @click="selectNote(n.id)" :class="['p-3 rounded-xl mb-2 cursor-pointer truncate transition-all', activeNoteId === n.id ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-500']">
                         # {{ n.title || 'Untitled Stream' }}
                     </div>
@@ -75,8 +66,7 @@
 
             <div class="pt-6 border-t border-zinc-100 dark:border-zinc-900">
                 <button @click="isDark = !isDark" class="w-full py-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-3 font-medium">
-                    <span v-if="isDark">☀️ Switch to Light</span>
-                    <span v-else>🌙 Switch to Dark</span>
+                    <span v-if="isDark">☀️ Light Mode</span><span v-else>🌙 Dark Mode</span>
                 </button>
             </div>
         </aside>
@@ -84,43 +74,33 @@
 
     <main class="flex-1 flex flex-col bg-white dark:bg-zinc-950 min-w-0 h-full relative">
         <header class="h-16 flex items-center justify-between px-6 border-b border-zinc-100 dark:border-zinc-900 shrink-0">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 flex-1">
                 <button @click="sidebarOpen = true" class="text-2xl">☰</button>
-                <input v-if="activeNote" v-model="activeNote.title" class="bg-transparent font-bold text-lg focus:ring-0 w-40" placeholder="Stream Title...">
+                <input v-if="activeNote" v-model="activeNote.title" class="bg-transparent font-bold text-lg focus:ring-0 w-full outline-none" placeholder="Stream Title...">
             </div>
-            <div v-if="activeNote" class="flex items-center gap-4">
-                <button @click="deleteNote" class="text-zinc-400 hover:text-red-500">🗑️</button>
-            </div>
+            <button v-if="activeNote" @click="deleteNote" class="ml-4 opacity-40 hover:opacity-100">🗑️</button>
         </header>
 
-        <div class="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar" id="feed">
+        <div class="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar" id="feed">
             <div class="max-w-2xl mx-auto flex flex-col gap-6">
                 <div v-if="activeNote && activeNote.blocks.length" v-for="(block, index) in activeNote.blocks" :key="block.id">
-                    
                     <div v-if="shouldShowDate(index)" class="flex justify-center my-8">
                         <span class="text-[10px] font-bold uppercase tracking-[0.2em] bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full text-zinc-400">
                             {{ formatDate(block.timestamp) }}
                         </span>
                     </div>
 
-                    <div class="group relative transition-all min-w-0">
-                        
-<div class="prose dark:prose-invert text-sm max-w-full w-full leading-relaxed break-words overflow-x-hidden"  v-html="renderMarkdown(block.text)"></div>
-                        
-                        <div class="mt-4 flex items-center justify-between border-t border-zinc-200/50 dark:border-zinc-800 pt-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <span class="text-[10px] max-w-2xlfont-mono">{{ formatTime(block.timestamp) }}</span>
+                    <div class="group relative  px-5 min-w-0">
+                        <div class="prose dark:prose-invert text-sm max-w-full w-full leading-relaxed" v-html="renderMarkdown(block.text)"></div>
+                        <div class="mt-4 flex items-center justify-between border-t border-zinc-200/30 dark:border-zinc-800 pt-3 opacity-40 group-hover:opacity-100 transition-opacity">
+                            <span class="text-[10px] font-mono">{{ formatTime(block.timestamp) }}</span>
                             <div class="flex gap-4">
                                 <button @click="copyBlock(block.text)" class="text-[10px] uppercase font-bold hover:text-blue-500">Copy</button>
                                 <button @click="editBlock(index)" class="text-[10px] uppercase font-bold hover:text-amber-500">Edit</button>
-                                <button @click="deleteBlock(index)" class="text-[10px] uppercase font-bold hover:text-red-500">Delete</button>
+                                <button @click="deleteBlock(index)" class="text-[10px] uppercase font-bold hover:text-red-500">Del</button>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div v-else class="text-center py-20 opacity-20">
-                    <p class="text-4xl mb-4">🫧</p>
-                    <p class="text-xs uppercase tracking-widest">Start the stream...</p>
                 </div>
             </div>
         </div>
@@ -132,10 +112,10 @@
                     ref="messageInput"
                     @keydown.enter.exact.prevent="appendMessage"
                     rows="1"
-                    class="w-full bg-transparent p-3 text-sm focus:ring-0 resize-none max-h-32"
-                    placeholder="Type something..."
+                    class="w-full bg-transparent p-3 text-sm focus:ring-0 resize-none max-h-32 outline-none"
+                    placeholder="Type a paragraph..."
                 ></textarea>
-                <button @click="appendMessage" class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-3 rounded-xl hover:scale-95 transition-transform">
+                <button @click="appendMessage" class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-3 rounded-xl">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
             </div>
@@ -148,8 +128,6 @@
 
     createApp({
         setup() {
-            const messageInput = ref(null);
-
             const folders = ref(JSON.parse(localStorage.getItem('zs_f')) || [{ id: '1', name: 'General' }]);
             const notes = ref(JSON.parse(localStorage.getItem('zs_n')) || []);
             const activeFolderId = ref(folders.value[0]?.id);
@@ -157,8 +135,8 @@
             const sidebarOpen = ref(true);
             const isDark = ref(localStorage.getItem('zs_t') === 'dark');
             const newMessage = ref('');
+            const messageInput = ref(null);
 
-            // Persistence
             watch([folders, notes], () => {
                 localStorage.setItem('zs_f', JSON.stringify(folders.value));
                 localStorage.setItem('zs_n', JSON.stringify(notes.value));
@@ -172,43 +150,17 @@
             const filteredNotes = computed(() => notes.value.filter(n => n.folderId === activeFolderId.value));
             const activeNote = computed(() => notes.value.find(n => n.id === activeNoteId.value));
 
-            // Methods
-            const createNote = () => {
-                const id = Date.now().toString();
-                notes.value.push({ id, folderId: activeFolderId.value, title: '', blocks: [] });
-                activeNoteId.value = id;
-                sidebarOpen.value = false;
-            };
-
-            const selectNote = (id) => {
-                activeNoteId.value = id;
-                sidebarOpen.value = false;
-                scrollToBottom();
-            };
-
-
             const appendMessage = () => {
                 if (!newMessage.value.trim() || !activeNote.value) return;
                 activeNote.value.blocks.push({
                     id: Date.now(),
-                    text: newMessage.value,
+                    text: newMessage.value.trim(),
                     timestamp: Date.now()
                 });
                 newMessage.value = '';
                 scrollToBottom();
-                nextTick(() => {
-                        messageInput.value.focus();
-                    });            
-                };  
-
-            const deleteBlock = (index) => activeNote.value.blocks.splice(index, 1);
-            
-            const editBlock = (index) => {
-                const newText = prompt("Edit your message:", activeNote.value.blocks[index].text);
-                if (newText !== null) activeNote.value.blocks[index].text = newText;
+                nextTick(() => messageInput.value?.focus());
             };
-
-            const copyBlock = (text) => navigator.clipboard.writeText(text);
 
             const scrollToBottom = () => {
                 nextTick(() => {
@@ -217,65 +169,28 @@
                 });
             };
 
-            // Formatting Logic
-            const shouldShowDate = (index) => {
-                if (index === 0) return true;
-                const prev = new Date(activeNote.value.blocks[index-1].timestamp).toLocaleDateString();
-                const curr = new Date(activeNote.value.blocks[index].timestamp).toLocaleDateString();
-                return prev !== curr;
-            };
-
-            const formatDate = (ts) => {
-                const d = new Date(ts);
-                const today = new Date().toLocaleDateString();
-                if (d.toLocaleDateString() === today) return 'Today';
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            };
-
+            const selectNote = (id) => { activeNoteId.value = id; sidebarOpen.value = false; scrollToBottom(); };
+            const shouldShowDate = (i) => i === 0 || new Date(activeNote.value.blocks[i-1].timestamp).toLocaleDateString() !== new Date(activeNote.value.blocks[i].timestamp).toLocaleDateString();
+            const formatDate = (ts) => new Date(ts).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const formatTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const renderMarkdown = (text) => marked.parse(text || '');
 
             return {
-                folders, notes, activeFolderId, activeNoteId, sidebarOpen, isDark, newMessage,
-                filteredNotes, activeNote, messageInput,
-                createNote, selectNote, appendMessage, deleteBlock, editBlock, copyBlock,
-                shouldShowDate, formatDate, formatTime, renderMarkdown,
-                createFolder: () => { const n = prompt('Folder:'); if(n) folders.value.push({id:Date.now().toString(), name:n}) },
-                deleteNote: () => { if(confirm('Delete Stream?')) notes.value = notes.value.filter(n => n.id !== activeNoteId.value); activeNoteId.value = null; }
+                folders, notes, activeFolderId, activeNoteId, sidebarOpen, isDark, newMessage, messageInput,
+                filteredNotes, activeNote, appendMessage, selectNote, shouldShowDate, formatDate, formatTime,
+                renderMarkdown: (t) => marked.parse(t || ''),
+                createFolder: () => { const n = prompt('Folder Name:'); if(n) folders.value.push({id:Date.now().toString(), name:n}) },
+                createNote: () => { const id = Date.now().toString(); notes.value.push({id, folderId: activeFolderId.value, title:'', blocks:[]}); activeNoteId.value=id; sidebarOpen.value=false; },
+                deleteNote: () => { if(confirm('Delete Stream?')) { notes.value = notes.value.filter(n => n.id !== activeNoteId.value); activeNoteId.value = null; } },
+                copyBlock: (t) => navigator.clipboard.writeText(t),
+                editBlock: (i) => { const n = prompt("Edit:", activeNote.value.blocks[i].text); if(n) activeNote.value.blocks[i].text = n; },
+                deleteBlock: (i) => activeNote.value.blocks.splice(i, 1)
             };
         }
     }).mount('#app');
 
-if ('serviceWorker' in navigator) {
-    const swCode = `
-        const CACHE_NAME = 'zenith-v2';
-        const ASSETS = [
-            '/',
-            'index.html',
-            'notes.png',
-            'https://unpkg.com/vue@3/dist/vue.global.js',
-            'https://cdn.tailwindcss.com',
-            'https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js',
-            'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono&display=swap'
-        ];
-
-        self.addEventListener('install', e => {
-            e.waitUntil(
-                caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-            );
-        });
-
-        self.addEventListener('fetch', e => {
-            e.respondWith(
-                caches.match(e.request).then(response => response || fetch(e.request))
-            );
-        });
-    `;
-    const blob = new Blob([swCode], { type: 'text/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(blob));
-}
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
 </script>
-
-<link rel="manifest" href='data:application/json,{"name":"BC Stream","short_name":"BC","start_url":".","display":"standalone","icons":[{"src":"notes.png","sizes":"512x512","type":"image/png"}]}'>
 </body>
 </html>
