@@ -1,5 +1,5 @@
-# Zenith Stream
-A minimalist, mobile-first, chat-style PWA note application.
+# BCnotes
+A minimalist, mobile-first, chat-style, private PWA note application.
 
 ## Features
 - **Stream UI**: Chat-like entry system.
@@ -7,6 +7,7 @@ A minimalist, mobile-first, chat-style PWA note application.
 - **PWA**: Fully offline capable once installed.
 - **Theming**: Integrated Dark/Light mode.
 - **Local Storage**: Data stays on your device.
+- **Privacy**: Only you can access your notes.
 
 ## Deployment
 1. Upload `index.html`, `sw.js`, `manifest.json`, `vercel.json`, and `notes.png` to your GitHub repo.
