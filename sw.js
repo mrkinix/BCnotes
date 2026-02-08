@@ -2,7 +2,7 @@ const CACHE_NAME = 'zenith-v1';
 const ASSETS = [
   '/',
   '/index.html',
-  '/site.webmanifest', // Change this to match your file name
+  '/site.webmanifest', 
   '/notes.png',
   '/web-app-manifest-512x512.png', // Add your new icons here
   'https://unpkg.com/vue@3/dist/vue.global.js',
@@ -32,3 +32,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
