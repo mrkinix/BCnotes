@@ -84,7 +84,7 @@
             <button v-if="activeNote" @click="deleteNote" class="ml-4 opacity-40 hover:opacity-100">🗑️</button>
         </header>
 
-        <div class="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar" id="feed">
+        <div class="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar pt-50" id="feed">
             <div class="max-w-2xl mx-auto flex flex-col gap-6">
                 <div v-if="activeNote && activeNote.blocks.length" v-for="(block, index) in activeNote.blocks" :key="block.id">
                     <div v-if="shouldShowDate(index)" class="flex justify-center my-8">
@@ -197,5 +197,6 @@
 </script>
 </body>
 </html>
+
 
 
