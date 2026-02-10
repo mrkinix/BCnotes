@@ -3,19 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>BC Stream</title>
-    <meta name="theme-color" content="#000000">
-    <link rel="apple-touch-icon" href="notes.png">
-    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="BC notes" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <title>BC Stream Pro</title>
+    <meta name="theme-color" content="#18181b">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -26,120 +19,256 @@
     <style>
         [v-cloak] { display: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        textarea:focus { outline: none !important; box-shadow: none !important; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #52525b; border-radius: 10px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        textarea:focus, input:focus { outline: none !important; box-shadow: none !important; }
         
-        /* Code Block & Width Blowout Fix */
+        /* Markdown Styles */
         .prose { word-break: break-word; overflow-wrap: break-word; }
-        .prose pre { white-space: pre !important; overflow-x: auto !important; max-width: 100% !important; display: block !important; padding: 1rem; border-radius: 0.5rem; background: #18181b; }
-        .prose code { white-space: pre-wrap !important; word-break: break-all !important; }
+        .prose pre { white-space: pre !important; overflow-x: auto !important; padding: 1rem; border-radius: 0.5rem; background: #27272a; color: #e4e4e7; }
+        .prose code { background: #f4f4f5; padding: 0.2em 0.4em; border-radius: 0.25rem; font-size: 0.875em; }
+        .dark .prose code { background: #27272a; color: #e4e4e7; }
+        .prose img { border-radius: 0.5rem; max-height: 400px; object-fit: cover; }
         
-        .menu-enter-active, .menu-leave-active { transition: transform 0.3s ease; }
-        .menu-enter-from, .menu-leave-to { transform: translateX(-100%); }
+        .slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
+        .slide-enter-from, .slide-leave-to { transform: translateX(-100%); }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
-<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 overflow-hidden font-sans">
+<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 overflow-hidden font-sans select-none">
 
 <div id="app" v-cloak class="flex h-screen w-full relative">
     
-    <transition name="menu">
-        <aside v-if="sidebarOpen" class="fixed inset-0 z-50 bg-white dark:bg-zinc-950 flex flex-col p-6 md:relative md:w-80 md:translate-x-0 md:flex md:border-r md:border-zinc-200 dark:md:border-zinc-800">
-            <div class="flex justify-between items-center mb-8">
-                <div class="flex items-center gap-3">
-                    <img src="notes.png" class="w-8 h-8 rounded-lg" alt="Logo">
-                    <h1 class="text-xl font-bold tracking-tighter">BC</h1>
-                </div>
-                <button @click="sidebarOpen = false" class="md:hidden text-2xl">✕</button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                <div class="mb-8">
-                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4 px-2">Folders <button @click="createFolder" class="text-lg">+</button></div>
-                    <div v-for="f in folders" @click="activeFolderId = f.id" :class="['p-3 rounded-xl mb-2 cursor-pointer transition-all', activeFolderId === f.id ? 'bg-zinc-100 dark:bg-zinc-900 font-semibold' : 'text-zinc-500']">
-                        📁 {{ f.name }}
-                    </div>
-                </div>
-                <div>
-                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4 px-2">Streams <button @click="createNote" class="text-lg">+</button></div>
-                    <div v-for="n in filteredNotes" @click="selectNote(n.id)" :class="['p-3 rounded-xl mb-2 cursor-pointer truncate transition-all', activeNoteId === n.id ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900' : 'text-zinc-500']">
-                        # {{ n.title || 'Untitled Stream' }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="pt-6 border-t border-zinc-100 dark:border-zinc-900">
-                <button @click="isDark = !isDark" class="w-full py-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-3 font-medium">
-                    <span v-if="isDark">☀️ Light Mode</span><span v-else>🌙 Dark Mode</span>
-                </button>
-            </div>
-        </aside>
+    <transition name="fade">
+        <div v-if="toast.show" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-6 py-3 rounded-full shadow-xl text-sm font-bold flex items-center gap-2">
+            <span>{{ toast.icon }}</span> {{ toast.message }}
+        </div>
     </transition>
 
-    <main class="flex-1 flex flex-col bg-white dark:bg-zinc-950 min-w-0 h-full relative">
-        <header class="h-16 flex items-center justify-between px-6 border-b border-zinc-100 dark:border-zinc-900 shrink-0">
-            <div class="flex items-center gap-4 flex-1">
-                <button @click="sidebarOpen = true" class="text-2xl">☰</button>
-                <input v-if="activeNote" v-model="activeNote.title" class="bg-transparent font-bold text-lg focus:ring-0 w-full outline-none" placeholder="Stream Title...">
-            </div>
-            <button v-if="activeNote" @click="deleteNote" class="ml-4 opacity-40 hover:opacity-100">🗑️</button>
-        </header>
-
-        <div class="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar pt-50" id="feed">
-            <div class="max-w-2xl mx-auto flex flex-col gap-6">
-                <div v-if="activeNote && activeNote.blocks.length" v-for="(block, index) in activeNote.blocks" :key="block.id">
-                    <div v-if="shouldShowDate(index)" class="flex justify-center my-8">
-                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full text-zinc-400">
-                            {{ formatDate(block.timestamp) }}
-                        </span>
+    <transition name="slide">
+        <aside v-if="sidebarOpen" class="fixed inset-0 z-50 bg-white dark:bg-zinc-950 flex flex-col w-full md:w-80 md:relative md:border-r md:border-zinc-200 dark:md:border-zinc-800 transition-colors duration-300">
+            <div class="p-6 pb-2 shrink-0">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-zinc-900 dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-zinc-900 font-bold">B</div>
+                        <h1 class="text-xl font-bold tracking-tighter">Stream</h1>
                     </div>
+                    <button @click="toggleSidebar(false)" class="md:hidden text-2xl p-2 opacity-60">✕</button>
+                </div>
 
-                    <div class="group relative  px-5 min-w-0">
-                        <div class="prose dark:prose-invert text-sm max-w-full w-full leading-relaxed" v-html="renderMarkdown(block.text)"></div>
-                        <div class="mt-4 flex items-center justify-between border-t border-zinc-200/30 dark:border-zinc-800 pt-3 opacity-40 group-hover:opacity-100 transition-opacity">
-                            <span class="text-[10px] font-mono">{{ formatTime(block.timestamp) }}</span>
-                            <div class="flex gap-4">
-                                <button @click="copyBlock(block.text)" class="text-[10px] uppercase font-bold hover:text-blue-500">Copy</button>
-                                <button @click="editBlock(index)" class="text-[10px] uppercase font-bold hover:text-amber-500">Edit</button>
-                                <button @click="deleteBlock(index)" class="text-[10px] uppercase font-bold hover:text-red-500">Del</button>
+                <div v-if="searchMode" class="mb-4">
+                    <input ref="searchInput" v-model="searchQuery" placeholder="Search notes..." class="w-full bg-zinc-100 dark:bg-zinc-900 p-2 rounded-lg text-sm">
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
+                <div v-if="viewMode === 'trash'" class="text-center py-8 opacity-50">
+                    <div class="text-4xl mb-2">🗑️</div>
+                    <div class="text-sm font-bold uppercase">Recycle Bin</div>
+                    <button @click="emptyTrash" class="mt-4 text-xs text-red-500 hover:underline">Empty Trash</button>
+                </div>
+
+                <div v-else>
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 px-2 mt-2">
+                        Library <button @click="createFolder" class="hover:text-zinc-900 dark:hover:text-white">+</button>
+                    </div>
+                    
+                    <div v-for="folder in filteredFolders" :key="folder.id" class="mb-1">
+                        <div class="group flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900/50 cursor-pointer select-none" @click="toggleFolder(folder.id)">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <span class="text-xs transition-transform duration-200" :class="{'rotate-90': folder.expanded}">▶</span>
+                                <span class="font-medium text-sm truncate" v-if="editingFolderId !== folder.id">{{ folder.name }}</span>
+                                <input v-else v-model="folder.name" @blur="editingFolderId = null" @click.stop @keydown.enter="editingFolderId = null" class="bg-transparent border-b border-zinc-500 text-sm w-full">
                             </div>
+                            <div class="flex gap-2 opacity-0 group-hover:opacity-100" v-if="!editingFolderId">
+                                <button @click.stop="createNote(folder.id)" class="text-xs opacity-50 hover:opacity-100">+</button>
+                                <button @click.stop="editingFolderId = folder.id" class="text-xs opacity-50 hover:opacity-100">✎</button>
+                                <button @click.stop="deleteFolder(folder.id)" class="text-xs opacity-50 hover:text-red-500">✕</button>
+                            </div>
+                        </div>
+
+                        <div v-if="folder.expanded || searchQuery" class="pl-4 border-l border-zinc-100 dark:border-zinc-800 ml-3 mt-1 space-y-1">
+                            <div v-for="note in getFolderNotes(folder.id)" :key="note.id" 
+                                 @click="openNote(note.id)"
+                                 class="p-2 rounded-lg text-sm cursor-pointer transition-all flex items-center justify-between group"
+                                 :class="activeNoteId === note.id ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-md' : 'text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/30'">
+                                <div class="flex items-center gap-2 truncate">
+                                    <span v-if="note.isTodo" @click.stop="toggleNoteDone(note)" class="cursor-pointer">
+                                        {{ note.isDone ? '✅' : '⬜' }}
+                                    </span>
+                                    <span :class="{'line-through opacity-50': note.isDone}" class="truncate">{{ note.title || 'Untitled Stream' }}</span>
+                                </div>
+                                <span v-if="viewMode === 'trash'" @click.stop="restoreNote(note)" class="text-xs px-2">♻️</span>
+                            </div>
+                            <div v-if="getFolderNotes(folder.id).length === 0 && !searchQuery" class="p-2 text-xs opacity-30 italic">No notes</div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="p-4 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-around shrink-0 bg-white dark:bg-zinc-950">
+                <button @click="toggleSearch" :class="{'text-blue-500': searchMode}" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+                <button @click="toggleTheme" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                    <span v-if="isDark">☀️</span><span v-else>🌙</span>
+                </button>
+                <button class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 opacity-30 cursor-not-allowed font-bold text-xs">EN</button>
+                <button @click="setViewMode('trash')" :class="{'text-red-500': viewMode === 'trash'}" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+                <button v-if="viewMode === 'trash'" @click="setViewMode('normal')" class="p-2 text-xs font-bold uppercase">Back</button>
+            </div>
+        </aside>
+    </transition>
+
+    <main class="flex-1 flex flex-col bg-white dark:bg-zinc-950 min-w-0 h-full relative z-0">
+        <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-zinc-100 dark:border-zinc-900 shrink-0">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+                <button @click="toggleSidebar(true)" class="md:hidden text-xl p-1 mr-1">☰</button>
+                
+                <div v-if="activeNote" class="flex-1 flex items-center gap-2 min-w-0">
+                    <input 
+                        v-model="activeNote.title" 
+                        @keydown.enter="focusInput"
+                        class="bg-transparent font-bold text-lg focus:ring-0 w-full outline-none truncate placeholder-zinc-300 dark:placeholder-zinc-700" 
+                        placeholder="Untitled Stream"
+                    >
+                    <button 
+                        v-if="activeNote.blocks.length === 0 && !activeNote.isDeleted" 
+                        @click="toggleActiveNoteTodo"
+                        class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 whitespace-nowrap"
+                        :class="{'bg-green-100 text-green-700': activeNote.isTodo}"
+                    >
+                        {{ activeNote.isTodo ? 'Task Mode' : 'Make Todo' }}
+                    </button>
+                </div>
+            </div>
+            
+            <button v-if="activeNote" @click="deleteActiveNote" class="ml-4 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
+                <svg v-if="activeNote.isDeleted" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar scroll-smooth" id="feed">
+            <div class="max-w-2xl mx-auto flex flex-col gap-6 pb-32">
+                <div v-if="activeNote" v-for="(block, index) in activeNote.blocks" :key="block.id">
+                    <div v-if="shouldShowDate(index)" class="flex justify-center my-6 opacity-40">
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full text-zinc-500">
+                            {{ formatDate(block.timestamp) }}
+                        </span>
+                    </div>
+
+                    <div class="group relative px-2 min-w-0 transition-all">
+                        <div v-if="block.isEditing" class="relative">
+                            <textarea 
+                                :ref="el => { if(el) setTextareaHeight(el) }"
+                                v-model="block.text" 
+                                @input="e => setTextareaHeight(e.target)"
+                                @blur="saveBlock(block)"
+                                class="w-full bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl resize-none text-sm font-mono border border-zinc-200 dark:border-zinc-800 focus:border-blue-500"
+                            ></textarea>
+                            <button @click="saveBlock(block)" class="absolute bottom-2 right-2 text-xs bg-black text-white px-2 py-1 rounded opacity-50 hover:opacity-100">Done</button>
+                        </div>
+
+                        <div v-else @click="enableEdit(block)" class="cursor-text">
+                            <div v-if="block.type === 'audio'" class="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl flex items-center gap-3">
+                                <span class="text-xl">🎤</span>
+                                <audio controls :src="block.data" class="h-8 w-full max-w-[200px]"></audio>
+                            </div>
+                            <div v-else class="prose dark:prose-invert text-sm max-w-full w-full leading-relaxed" v-html="renderBlock(block)"></div>
+                        </div>
+
+                        <div class="mt-2 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <span class="text-[10px] font-mono text-zinc-400">{{ formatTime(block.timestamp) }}</span>
+                            <div class="flex gap-3">
+                                <button @click="copyBlock(block.text)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-blue-500">Copy</button>
+                                <button @click="enableEdit(block)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-amber-500">Edit</button>
+                                <button @click="deleteBlock(index)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-red-500">Del</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="!activeNote" class="h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 pt-20">
+                    <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <p class="text-sm font-medium">Select a stream or create new</p>
+                </div>
+            </div>
         </div>
 
-        <footer v-if="activeNote" class="p-4 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-900 shrink-0">
-            <div class="max-w-2xl mx-auto relative flex items-end gap-2 bg-zinc-100 dark:bg-zinc-900 p-2 rounded-2xl">
+        <footer v-if="activeNote && !activeNote.isDeleted" class="p-4 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-900 shrink-0 sticky bottom-0 z-10">
+            <div class="max-w-2xl mx-auto relative flex items-end gap-2 bg-zinc-50 dark:bg-zinc-900 p-2 rounded-2xl border border-transparent focus-within:border-zinc-200 dark:focus-within:border-zinc-700 transition-colors">
                 <textarea 
                     v-model="newMessage" 
                     ref="messageInput"
                     @keydown.enter.exact.prevent="appendMessage"
                     rows="1"
-                    class="w-full bg-transparent p-3 text-sm focus:ring-0 resize-none max-h-32 outline-none"
-                    placeholder="Type a paragraph..."
+                    class="w-full bg-transparent p-3 text-sm focus:ring-0 resize-none max-h-32 placeholder-zinc-400"
+                    placeholder="Type a thought..."
+                    @input="autoResizeInput"
                 ></textarea>
-                <button @click="appendMessage" class="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 p-3 rounded-xl">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                </button>
+                
+                <div class="flex items-center gap-1 pb-2 pr-2">
+                    <div v-if="!newMessage.trim()" class="flex items-center gap-1 transition-all">
+                        <button @click="triggerImageUpload" class="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors" title="Upload Image">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </button>
+                        <button @click="toggleRecording" :class="isRecording ? 'text-red-500 animate-pulse' : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white'" class="p-2 transition-colors" title="Voice Note">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        </button>
+                    </div>
+
+                    <button @click="appendMessage" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-2 rounded-xl hover:scale-105 active:scale-95 transition-transform">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </div>
             </div>
         </footer>
+        
+        <input type="file" ref="imageInput" accept="image/*" class="hidden" @change="handleImageUpload">
     </main>
 </div>
 
+
 <script>
-    const { createApp, ref, computed, watch, nextTick } = Vue;
+    const { createApp, ref, computed, watch, nextTick, onMounted } = Vue;
 
     createApp({
         setup() {
-            const folders = ref(JSON.parse(localStorage.getItem('zs_f')) || [{ id: '1', name: 'General' }]);
+            // --- State ---
+            const folders = ref(JSON.parse(localStorage.getItem('zs_f')) || [{ id: '1', name: 'General', expanded: true }]);
             const notes = ref(JSON.parse(localStorage.getItem('zs_n')) || []);
-            const activeFolderId = ref(folders.value[0]?.id);
-            const activeNoteId = ref(null);
-            const sidebarOpen = ref(true);
+            const sidebarOpen = ref(window.innerWidth > 768);
             const isDark = ref(localStorage.getItem('zs_t') === 'dark');
             const newMessage = ref('');
-            const messageInput = ref(null);
+            const activeNoteId = ref(null);
+            const viewMode = ref('normal'); // 'normal' or 'trash'
+            const searchQuery = ref('');
+            const searchMode = ref(false);
+            const editingFolderId = ref(null);
+            const isRecording = ref(false);
+            const toast = ref({ show: false, message: '', icon: '' });
 
+            // Refs
+            const messageInput = ref(null);
+            const searchInput = ref(null);
+            const imageInput = ref(null);
+            let mediaRecorder = null;
+            let audioChunks = [];
+
+            // --- Computed ---
+            const activeNote = computed(() => notes.value.find(n => n.id === activeNoteId.value));
+            
+            const filteredFolders = computed(() => {
+                // In trash mode, we don't really use folders, but kept for structure.
+                // In search mode, we might want to expand all folders that have matching notes.
+                return folders.value;
+            });
+
+            // --- Persistence ---
             watch([folders, notes], () => {
                 localStorage.setItem('zs_f', JSON.stringify(folders.value));
                 localStorage.setItem('zs_n', JSON.stringify(notes.value));
@@ -150,43 +279,263 @@
                 localStorage.setItem('zs_t', val ? 'dark' : 'light');
             }, { immediate: true });
 
-            const filteredNotes = computed(() => notes.value.filter(n => n.folderId === activeFolderId.value));
-            const activeNote = computed(() => notes.value.find(n => n.id === activeNoteId.value));
+            // --- Navigation / History API ---
+            const toggleSidebar = (state) => {
+                sidebarOpen.value = state;
+                if(state && window.innerWidth < 768) {
+                    history.pushState({ overlay: true }, '');
+                }
+            };
 
+            const openNote = (id) => {
+                activeNoteId.value = id;
+                if(window.innerWidth < 768) {
+                    sidebarOpen.value = false;
+                    history.pushState({ noteId: id }, '');
+                }
+                scrollToBottom();
+            };
+
+            // Handle Android Back Button
+            window.onpopstate = (event) => {
+                if(sidebarOpen.value && window.innerWidth < 768) {
+                    sidebarOpen.value = false; // Close overlay
+                } else if(activeNoteId.value) {
+                    // activeNoteId.value = null; // Exit note (optional, depending on preference)
+                }
+            };
+
+            // --- Core Functions ---
+            const showToast = (msg, icon='✓') => {
+                toast.value = { show: true, message: msg, icon };
+                setTimeout(() => toast.value.show = false, 3000);
+            };
+
+            const createFolder = () => {
+                const name = prompt('Folder Name:');
+                if(name) folders.value.push({id: Date.now().toString(), name, expanded: true});
+            };
+
+            const deleteFolder = (id) => {
+                if(confirm('Delete Folder? Notes will be moved to Trash.')) {
+                    notes.value.forEach(n => { if(n.folderId === id) n.isDeleted = true; });
+                    folders.value = folders.value.filter(f => f.id !== id);
+                    showToast('Folder deleted', '🗑️');
+                }
+            };
+
+            const createNote = (folderId) => {
+                const id = Date.now().toString();
+                notes.value.push({
+                    id, 
+                    folderId, 
+                    title: '', 
+                    blocks: [], 
+                    isTodo: false, 
+                    isDone: false, 
+                    isDeleted: false,
+                    timestamp: Date.now()
+                });
+                folders.value.find(f => f.id === folderId).expanded = true;
+                openNote(id);
+                nextTick(() => document.querySelector('header input')?.focus());
+            };
+
+            const getFolderNotes = (folderId) => {
+                return notes.value.filter(n => {
+                    const matchesFolder = n.folderId === folderId;
+                    const isTrashed = n.isDeleted;
+                    const matchesSearch = searchQuery.value 
+                        ? (n.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || n.blocks.some(b => b.text.toLowerCase().includes(searchQuery.value.toLowerCase())))
+                        : true;
+                    
+                    if (viewMode.value === 'trash') return false; // Trash is separate
+                    return matchesFolder && !isTrashed && matchesSearch;
+                }).sort((a,b) => b.timestamp - a.timestamp);
+            };
+
+            const trashNotes = computed(() => notes.value.filter(n => n.isDeleted));
+
+            // --- Message Handling ---
             const appendMessage = () => {
                 if (!newMessage.value.trim() || !activeNote.value) return;
                 activeNote.value.blocks.push({
                     id: Date.now(),
                     text: newMessage.value.trim(),
-                    timestamp: Date.now()
+                    type: 'text',
+                    timestamp: Date.now(),
+                    isEditing: false
                 });
+                activeNote.value.timestamp = Date.now(); // bump last edited
                 newMessage.value = '';
-                scrollToBottom();
-                nextTick(() => messageInput.value?.focus());
-            };
-
-            const scrollToBottom = () => {
                 nextTick(() => {
-                    const el = document.getElementById('feed');
-                    if (el) el.scrollTop = el.scrollHeight;
+                    autoResizeInput();
+                    scrollToBottom();
+                    messageInput.value?.focus();
                 });
             };
 
-            const selectNote = (id) => { activeNoteId.value = id; sidebarOpen.value = false; scrollToBottom(); };
+            const renderBlock = (block) => {
+                if(block.type === 'image') return `<img src="${block.data}" alt="Image">`;
+                return marked.parse(block.text || '');
+            };
+
+            // --- Edit Logic ---
+            const enableEdit = (block) => {
+                block.isEditing = true;
+                nextTick(() => {
+                    // Find the textarea corresponding to this block
+                    // Implementation note: V-for creates refs, simple focus logic:
+                    // Using a ref function in template
+                });
+            };
+
+            const saveBlock = (block) => {
+                block.isEditing = false;
+            };
+            
+            const setTextareaHeight = (el) => {
+                if(!el) return;
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+            };
+
+            const autoResizeInput = () => {
+                const el = messageInput.value;
+                if(el) {
+                    el.style.height = 'auto';
+                    el.style.height = Math.min(el.scrollHeight, 128) + 'px';
+                }
+            };
+
+            // --- Media Handlers ---
+            const triggerImageUpload = () => imageInput.value.click();
+            
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Compress/Resize Logic (Basic Canvas) to save localstorage
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress
+                        
+                        activeNote.value.blocks.push({
+                            id: Date.now(),
+                            type: 'image',
+                            data: dataUrl,
+                            text: 'Image',
+                            timestamp: Date.now()
+                        });
+                        scrollToBottom();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+                e.target.value = ''; // reset
+            };
+
+            const toggleRecording = async () => {
+                if (isRecording.value) {
+                    mediaRecorder.stop();
+                    isRecording.value = false;
+                } else {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                        mediaRecorder.onstop = () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' }); // simplified type
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                activeNote.value.blocks.push({
+                                    id: Date.now(),
+                                    type: 'audio',
+                                    data: e.target.result,
+                                    text: 'Voice Note',
+                                    timestamp: Date.now()
+                                });
+                                scrollToBottom();
+                            };
+                            reader.readAsDataURL(audioBlob);
+                        };
+                        mediaRecorder.start();
+                        isRecording.value = true;
+                    } catch(e) {
+                        alert("Mic access denied");
+                    }
+                }
+            };
+
+            // --- Trash & Tools ---
+            const deleteActiveNote = () => {
+                if (activeNote.value.isDeleted) {
+                    // Permanent Delete
+                    if(confirm("Permanently delete?")) {
+                        notes.value = notes.value.filter(n => n.id !== activeNoteId.value);
+                        activeNoteId.value = null;
+                        showToast('Note deleted forever', '☠️');
+                    }
+                } else {
+                    // Soft Delete
+                    activeNote.value.isDeleted = true;
+                    activeNoteId.value = null;
+                    showToast('Moved to Trash', '🗑️');
+                }
+            };
+
+            const restoreNote = (note) => {
+                note.isDeleted = false;
+                showToast('Restored', '♻️');
+            };
+
+            const toggleSearch = () => {
+                searchMode.value = !searchMode.value;
+                if(searchMode.value) nextTick(() => searchInput.value?.focus());
+                else searchQuery.value = '';
+            };
+
+            const emptyTrash = () => {
+                if(confirm('Empty Trash? This cannot be undone.')) {
+                    notes.value = notes.value.filter(n => !n.isDeleted);
+                    showToast('Trash Emptied');
+                }
+            };
+
+            // --- Utils ---
+            const scrollToBottom = () => nextTick(() => { const el = document.getElementById('feed'); if (el) el.scrollTop = el.scrollHeight; });
+            const focusInput = () => messageInput.value?.focus();
             const shouldShowDate = (i) => i === 0 || new Date(activeNote.value.blocks[i-1].timestamp).toLocaleDateString() !== new Date(activeNote.value.blocks[i].timestamp).toLocaleDateString();
-            const formatDate = (ts) => new Date(ts).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const formatDate = (ts) => new Date(ts).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const formatTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return {
-                folders, notes, activeFolderId, activeNoteId, sidebarOpen, isDark, newMessage, messageInput,
-                filteredNotes, activeNote, appendMessage, selectNote, shouldShowDate, formatDate, formatTime,
-                renderMarkdown: (t) => marked.parse(t || ''),
-                createFolder: () => { const n = prompt('Folder Name:'); if(n) folders.value.push({id:Date.now().toString(), name:n}) },
-                createNote: () => { const id = Date.now().toString(); notes.value.push({id, folderId: activeFolderId.value, title:'', blocks:[]}); activeNoteId.value=id; sidebarOpen.value=false; },
-                deleteNote: () => { if(confirm('Delete Stream?')) { notes.value = notes.value.filter(n => n.id !== activeNoteId.value); activeNoteId.value = null; } },
-                copyBlock: (t) => navigator.clipboard.writeText(t),
-                editBlock: (i) => { const n = prompt("Edit:", activeNote.value.blocks[i].text); if(n) activeNote.value.blocks[i].text = n; },
-                deleteBlock: (i) => activeNote.value.blocks.splice(i, 1)
+                folders, notes, activeNoteId, sidebarOpen, isDark, newMessage, messageInput, searchInput, imageInput,
+                filteredFolders, activeNote, searchMode, searchQuery, viewMode, trashNotes, editingFolderId, isRecording, toast,
+                appendMessage, openNote, shouldShowDate, formatDate, formatTime, renderBlock,
+                createFolder, deleteFolder, createNote, deleteActiveNote, restoreNote, emptyTrash,
+                toggleSidebar, toggleSearch, toggleTheme: () => isDark.value = !isDark.value, setViewMode: (m) => viewMode.value = m,
+                toggleFolder: (id) => { const f = folders.value.find(x => x.id === id); if(f) f.expanded = !f.expanded; },
+                getFolderNotes, enableEdit, saveBlock, copyBlock: (t) => { navigator.clipboard.writeText(t); showToast('Copied to clipboard'); },
+                deleteBlock: (i) => { activeNote.value.blocks.splice(i, 1); showToast('Block deleted'); },
+                toggleNoteDone: (n) => n.isDone = !n.isDone,
+                toggleActiveNoteTodo: () => { if(activeNote.value) activeNote.value.isTodo = !activeNote.value.isTodo; },
+                triggerImageUpload, handleImageUpload, toggleRecording, setTextareaHeight, autoResizeInput, focusInput
             };
         }
     }).mount('#app');
@@ -197,6 +546,3 @@
 </script>
 </body>
 </html>
-
-
-
