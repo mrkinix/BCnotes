@@ -23,7 +23,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         textarea:focus, input:focus { outline: none !important; box-shadow: none !important; }
         
-        /* Markdown Styles */
         .prose { word-break: break-word; overflow-wrap: break-word; }
         .prose pre { white-space: pre !important; overflow-x: auto !important; padding: 1rem; border-radius: 0.5rem; background: #27272a; color: #e4e4e7; }
         .prose code { background: #f4f4f5; padding: 0.2em 0.4em; border-radius: 0.25rem; font-size: 0.875em; }
@@ -36,7 +35,7 @@
         .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
-<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 overflow-hidden font-sans select-none">
+<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 overflow-hidden font-sans">
 
 <div id="app" v-cloak class="flex h-screen w-full relative">
     
@@ -51,10 +50,9 @@
             <div class="p-6 pb-2 shrink-0">
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-zinc-900 dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-zinc-900 font-bold">B</div>
-                        <h1 class="text-xl font-bold tracking-tighter">Stream</h1>
+                        <div class="w-8 h-8 bg-zinc-900 dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-zinc-900 font-bold">BC</div>
+                        <h1 class="text-xl font-bold tracking-tighter">Notes</h1>
                     </div>
-                    <button @click="toggleSidebar(false)" class="md:hidden text-2xl p-2 opacity-60">✕</button>
                 </div>
 
                 <div v-if="searchMode" class="mb-4">
@@ -71,20 +69,20 @@
 
                 <div v-else>
                     <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 px-2 mt-2">
-                        Library <button @click="createFolder" class="hover:text-zinc-900 dark:hover:text-white">+</button>
+                        Library <button @click="createFolder" class="hover:text-zinc-900 dark:hover:text-white text-lg">+</button>
                     </div>
                     
                     <div v-for="folder in filteredFolders" :key="folder.id" class="mb-1">
-                        <div class="group flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900/50 cursor-pointer select-none" @click="toggleFolder(folder.id)">
+                        <div class="group flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900/50 cursor-pointer" @click="toggleFolder(folder.id)">
                             <div class="flex items-center gap-2 overflow-hidden">
                                 <span class="text-xs transition-transform duration-200" :class="{'rotate-90': folder.expanded}">▶</span>
                                 <span class="font-medium text-sm truncate" v-if="editingFolderId !== folder.id">{{ folder.name }}</span>
                                 <input v-else v-model="folder.name" @blur="editingFolderId = null" @click.stop @keydown.enter="editingFolderId = null" class="bg-transparent border-b border-zinc-500 text-sm w-full">
                             </div>
                             <div class="flex gap-2 opacity-0 group-hover:opacity-100" v-if="!editingFolderId">
-                                <button @click.stop="createNote(folder.id)" class="text-xs opacity-50 hover:opacity-100">+</button>
-                                <button @click.stop="editingFolderId = folder.id" class="text-xs opacity-50 hover:opacity-100">✎</button>
-                                <button @click.stop="deleteFolder(folder.id)" class="text-xs opacity-50 hover:text-red-500">✕</button>
+                                <button @click.stop="createNote(folder.id)" class="text-lg opacity-50 hover:opacity-100">+</button>
+                                <button @click.stop="editingFolderId = folder.id" class="text-lg opacity-50 hover:opacity-100">✎</button>
+                                <button @click.stop="deleteFolder(folder.id)" class="text-lg opacity-50 hover:text-red-500">✕</button>
                             </div>
                         </div>
 
@@ -94,29 +92,25 @@
                                  class="p-2 rounded-lg text-sm cursor-pointer transition-all flex items-center justify-between group"
                                  :class="activeNoteId === note.id ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-md' : 'text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/30'">
                                 <div class="flex items-center gap-2 truncate">
-                                    <span v-if="note.isTodo" @click.stop="toggleNoteDone(note)" class="cursor-pointer">
-                                        {{ note.isDone ? '✅' : '⬜' }}
-                                    </span>
-                                    <span :class="{'line-through opacity-50': note.isDone}" class="truncate">{{ note.title || 'Untitled Stream' }}</span>
+                                    <span class="truncate">{{ note.title || 'Untitled Note' }}</span>
                                 </div>
-                                <span v-if="viewMode === 'trash'" @click.stop="restoreNote(note)" class="text-xs px-2">♻️</span>
+                                <span v-if="viewMode === 'trash'" @click.stop="restoreNote(note)" class="text-sm px-2">♻️</span>
                             </div>
-                            <div v-if="getFolderNotes(folder.id).length === 0 && !searchQuery" class="p-2 text-xs opacity-30 italic">No notes</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="p-4 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-around shrink-0 bg-white dark:bg-zinc-950">
+                <button @click="setViewMode('trash')" :class="{'text-red-500': viewMode === 'trash'}" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
                 <button @click="toggleSearch" :class="{'text-blue-500': searchMode}" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </button>
+                <button class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-bold">EN</button>
                 <button @click="toggleTheme" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
-                    <span v-if="isDark">☀️</span><span v-else>🌙</span>
-                </button>
-                <button class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 opacity-30 cursor-not-allowed font-bold text-xs">EN</button>
-                <button @click="setViewMode('trash')" :class="{'text-red-500': viewMode === 'trash'}" class="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    <span v-if="isDark"><svg xmlns="http://www.w3.org/2000/svg" width="25px" height="25px" viewBox="0 0 24 24"><path fill="currentColor" d="M9.165 14.836Q8 13.67 8 12t1.165-2.835T12 8t2.836 1.165T16 12t-1.164 2.836T12 16t-2.835-1.164M5 12.5H1.5v-1H5zm17.5 0H19v-1h3.5zM11.5 5V1.5h1V5zm0 17.5V19h1v3.5zM6.746 7.404l-2.16-2.098l.695-.745l2.111 2.135zM18.72 19.439l-2.117-2.141l.652-.702l2.16 2.098zM16.596 6.745l2.098-2.16l.745.695l-2.135 2.111zM4.562 18.72l2.14-2.117l.664.652l-2.08 2.179z"/></svg></span><span v-else><svg xmlns="http://www.w3.org/2000/svg" width="25px" height="25px" viewBox="0 0 24 24"><path fill="currentColor" d="M12.058 20q-3.334 0-5.667-2.333T4.058 12q0-3.039 1.98-5.27t4.904-2.634q.081 0 .159.006t.153.017q-.506.706-.801 1.57T10.158 7.5q0 2.667 1.866 4.533t4.534 1.867q.951 0 1.813-.295t1.548-.801q.012.075.017.153t.006.159q-.384 2.923-2.615 4.903T12.057 20m0-1q2.2 0 3.95-1.213t2.55-3.162q-.5.125-1 .2t-1 .075q-3.074 0-5.237-2.162T9.158 7.5q0-.5.075-1t.2-1q-1.95.8-3.163 2.55T5.058 12q0 2.9 2.05 4.95t4.95 2.05m-.25-6.75"/></svg></span>
                 </button>
                 <button v-if="viewMode === 'trash'" @click="setViewMode('normal')" class="p-2 text-xs font-bold uppercase">Back</button>
             </div>
@@ -126,34 +120,29 @@
     <main class="flex-1 flex flex-col bg-white dark:bg-zinc-950 min-w-0 h-full relative z-0">
         <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b border-zinc-100 dark:border-zinc-900 shrink-0">
             <div class="flex items-center gap-3 flex-1 min-w-0">
-                <button @click="toggleSidebar(true)" class="md:hidden text-xl p-1 mr-1">☰</button>
+                <button @click="toggleSidebar(!sidebarOpen)" class="text-xl p-1 mr-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg">☰</button>
                 
                 <div v-if="activeNote" class="flex-1 flex items-center gap-2 min-w-0">
                     <input 
                         v-model="activeNote.title" 
-                        @keydown.enter="focusInput"
+                        @keydown.enter.prevent="focusInput"
                         class="bg-transparent font-bold text-lg focus:ring-0 w-full outline-none truncate placeholder-zinc-300 dark:placeholder-zinc-700" 
-                        placeholder="Untitled Stream"
+                        placeholder="Untitled Note"
                     >
                     <button 
-                        v-if="activeNote.blocks.length === 0 && !activeNote.isDeleted" 
+                        v-if="!activeNote.isDeleted" 
                         @click="toggleActiveNoteTodo"
                         class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 whitespace-nowrap"
                         :class="{'bg-green-100 text-green-700': activeNote.isTodo}"
                     >
-                        {{ activeNote.isTodo ? 'Task Mode' : 'Make Todo' }}
+                        {{ activeNote.isTodo ? 'Todo Mode' : 'Make Todo' }}
                     </button>
                 </div>
             </div>
-            
-            <button v-if="activeNote" @click="deleteActiveNote" class="ml-4 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
-                <svg v-if="activeNote.isDeleted" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </header>
+            </header>
 
         <div class="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar scroll-smooth" id="feed">
-            <div class="max-w-2xl mx-auto flex flex-col gap-6 pb-32">
+            <div class="max-w-2xl mx-auto flex flex-col gap-6">
                 <div v-if="activeNote" v-for="(block, index) in activeNote.blocks" :key="block.id">
                     <div v-if="shouldShowDate(index)" class="flex justify-center my-6 opacity-40">
                         <span class="text-[10px] font-bold uppercase tracking-[0.2em] bg-zinc-100 dark:bg-zinc-900 px-3 py-1 rounded-full text-zinc-500">
@@ -161,32 +150,39 @@
                         </span>
                     </div>
 
-                    <div class="group relative px-2 min-w-0 transition-all">
-                        <div v-if="block.isEditing" class="relative">
-                            <textarea 
-                                :ref="el => { if(el) setTextareaHeight(el) }"
-                                v-model="block.text" 
-                                @input="e => setTextareaHeight(e.target)"
-                                @blur="saveBlock(block)"
-                                class="w-full bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl resize-none text-sm font-mono border border-zinc-200 dark:border-zinc-800 focus:border-blue-500"
-                            ></textarea>
-                            <button @click="saveBlock(block)" class="absolute bottom-2 right-2 text-xs bg-black text-white px-2 py-1 rounded opacity-50 hover:opacity-100">Done</button>
+                    <div class="group relative px-2 min-w-0 transition-all flex items-start gap-3">
+                        <div v-if="activeNote.isTodo" @click="block.isDone = !block.isDone" class="mt-1 cursor-pointer select-none">
+                            <span v-if="block.isDone" class="text-lg">✅</span>
+                            <span v-else class="text-lg opacity-40">⬜</span>
                         </div>
 
-                        <div v-else @click="enableEdit(block)" class="cursor-text">
-                            <div v-if="block.type === 'audio'" class="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl flex items-center gap-3">
-                                <span class="text-xl">🎤</span>
-                                <audio controls :src="block.data" class="h-8 w-full max-w-[200px]"></audio>
+                        <div class="flex-1 min-w-0">
+                            <div v-if="block.isEditing" class="relative">
+                                <textarea 
+                                    :ref="el => { if(el) setTextareaHeight(el) }"
+                                    v-model="block.text" 
+                                    @input="e => setTextareaHeight(e.target)"
+                                    @blur="saveBlock(block)"
+                                    class="w-full bg-zinc-50 dark:bg-zinc-900 p-4 rounded-xl resize-none text-sm font-mono border border-zinc-200 dark:border-zinc-800 focus:border-blue-500"
+                                ></textarea>
+                                <button @click="saveBlock(block)" class="absolute bottom-2 right-2 text-xs bg-black text-white px-2 py-1 rounded opacity-50 hover:opacity-100">Done</button>
                             </div>
-                            <div v-else class="prose dark:prose-invert text-sm max-w-full w-full leading-relaxed" v-html="renderBlock(block)"></div>
-                        </div>
 
-                        <div class="mt-2 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <span class="text-[10px] font-mono text-zinc-400">{{ formatTime(block.timestamp) }}</span>
-                            <div class="flex gap-3">
-                                <button @click="copyBlock(block.text)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-blue-500">Copy</button>
-                                <button @click="enableEdit(block)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-amber-500">Edit</button>
-                                <button @click="deleteBlock(index)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-red-500">Del</button>
+                            <div v-else :class="{'line-through opacity-50': activeNote.isTodo && block.isDone}" class="cursor-text">
+                                <div v-if="block.type === 'audio'" class="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl flex items-center gap-3">
+                                    <span class="text-xl">🎤</span>
+                                    <audio controls :src="block.data" class="h-8 w-full max-w-[200px]"></audio>
+                                </div>
+                                <div v-else class="prose dark:prose-invert text-sm max-w-full w-full leading-relaxed" v-html="renderBlock(block)"></div>
+                            </div>
+
+                            <div class="mt-2 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800/50 pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <span class="text-[10px] font-mono text-zinc-400">{{ formatTime(block.timestamp) }}</span>
+                                <div class="flex gap-3">
+                                    <button @click="copyBlock(block.text)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-blue-500">Copy</button>
+                                    <button @click="enableEdit(block)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-amber-500">Edit</button>
+                                    <button @click="deleteBlock(index)" class="text-[10px] uppercase font-bold text-zinc-400 hover:text-red-500">Del</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -194,7 +190,7 @@
 
                 <div v-if="!activeNote" class="h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 pt-20">
                     <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    <p class="text-sm font-medium">Select a stream or create new</p>
+                    <p class="text-sm font-medium">Select a note or create new</p>
                 </div>
             </div>
         </div>
@@ -205,6 +201,7 @@
                     v-model="newMessage" 
                     ref="messageInput"
                     @keydown.enter.exact.prevent="appendMessage"
+                    @paste="handlePaste"
                     rows="1"
                     class="w-full bg-transparent p-3 text-sm focus:ring-0 resize-none max-h-32 placeholder-zinc-400"
                     placeholder="Type a thought..."
@@ -238,37 +235,60 @@
 
     createApp({
         setup() {
-            // --- State ---
             const folders = ref(JSON.parse(localStorage.getItem('zs_f')) || [{ id: '1', name: 'General', expanded: true }]);
             const notes = ref(JSON.parse(localStorage.getItem('zs_n')) || []);
-            const sidebarOpen = ref(window.innerWidth > 768);
+            const sidebarOpen = ref(window.innerWidth > 768 || !localStorage.getItem('activeNoteId'));
             const isDark = ref(localStorage.getItem('zs_t') === 'dark');
             const newMessage = ref('');
             const activeNoteId = ref(null);
-            const viewMode = ref('normal'); // 'normal' or 'trash'
+            const viewMode = ref('normal');
             const searchQuery = ref('');
             const searchMode = ref(false);
             const editingFolderId = ref(null);
             const isRecording = ref(false);
             const toast = ref({ show: false, message: '', icon: '' });
 
-            // Refs
             const messageInput = ref(null);
             const searchInput = ref(null);
             const imageInput = ref(null);
             let mediaRecorder = null;
             let audioChunks = [];
 
-            // --- Computed ---
             const activeNote = computed(() => notes.value.find(n => n.id === activeNoteId.value));
-            
-            const filteredFolders = computed(() => {
-                // In trash mode, we don't really use folders, but kept for structure.
-                // In search mode, we might want to expand all folders that have matching notes.
-                return folders.value;
+            const filteredFolders = computed(() => folders.value);
+
+            onMounted(() => {
+                // Initial history state to catch back button
+                history.replaceState({ view: 'library' }, '');
+                window.onpopstate = (event) => {
+                    if (window.innerWidth < 768) {
+                        if (event.state?.view === 'note') {
+                            activeNoteId.value = event.state.id;
+                            sidebarOpen.value = false;
+                        } else {
+                            // Default back to library
+                            activeNoteId.value = null;
+                            sidebarOpen.value = true;
+                        }
+                    }
+                };
             });
 
-            // --- Persistence ---
+            const openNote = (id) => {
+                activeNoteId.value = id;
+                // Auto-reset search mode
+                searchMode.value = false;
+                searchQuery.value = '';
+
+                if(window.innerWidth < 768) {
+                    sidebarOpen.value = false;
+                    // Push state once so one back button click goes back to library
+                    history.replaceState({ view: 'note', id: id }, '');
+                    history.pushState({ view: 'note', id: id }, '');
+                }
+                scrollToBottom();
+            };
+
             watch([folders, notes], () => {
                 localStorage.setItem('zs_f', JSON.stringify(folders.value));
                 localStorage.setItem('zs_n', JSON.stringify(notes.value));
@@ -279,33 +299,10 @@
                 localStorage.setItem('zs_t', val ? 'dark' : 'light');
             }, { immediate: true });
 
-            // --- Navigation / History API ---
             const toggleSidebar = (state) => {
                 sidebarOpen.value = state;
-                if(state && window.innerWidth < 768) {
-                    history.pushState({ overlay: true }, '');
-                }
             };
 
-            const openNote = (id) => {
-                activeNoteId.value = id;
-                if(window.innerWidth < 768) {
-                    sidebarOpen.value = false;
-                    history.pushState({ noteId: id }, '');
-                }
-                scrollToBottom();
-            };
-
-            // Handle Android Back Button
-            window.onpopstate = (event) => {
-                if(sidebarOpen.value && window.innerWidth < 768) {
-                    sidebarOpen.value = false; // Close overlay
-                } else if(activeNoteId.value) {
-                    // activeNoteId.value = null; // Exit note (optional, depending on preference)
-                }
-            };
-
-            // --- Core Functions ---
             const showToast = (msg, icon='✓') => {
                 toast.value = { show: true, message: msg, icon };
                 setTimeout(() => toast.value.show = false, 3000);
@@ -327,14 +324,7 @@
             const createNote = (folderId) => {
                 const id = Date.now().toString();
                 notes.value.push({
-                    id, 
-                    folderId, 
-                    title: '', 
-                    blocks: [], 
-                    isTodo: false, 
-                    isDone: false, 
-                    isDeleted: false,
-                    timestamp: Date.now()
+                    id, folderId, title: '', blocks: [], isTodo: false, isDone: false, isDeleted: false, timestamp: Date.now()
                 });
                 folders.value.find(f => f.id === folderId).expanded = true;
                 openNote(id);
@@ -344,35 +334,67 @@
             const getFolderNotes = (folderId) => {
                 return notes.value.filter(n => {
                     const matchesFolder = n.folderId === folderId;
-                    const isTrashed = n.isDeleted;
                     const matchesSearch = searchQuery.value 
                         ? (n.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || n.blocks.some(b => b.text.toLowerCase().includes(searchQuery.value.toLowerCase())))
                         : true;
-                    
-                    if (viewMode.value === 'trash') return false; // Trash is separate
-                    return matchesFolder && !isTrashed && matchesSearch;
+                    return matchesFolder && !n.isDeleted && matchesSearch;
                 }).sort((a,b) => b.timestamp - a.timestamp);
             };
 
-            const trashNotes = computed(() => notes.value.filter(n => n.isDeleted));
-
-            // --- Message Handling ---
             const appendMessage = () => {
                 if (!newMessage.value.trim() || !activeNote.value) return;
                 activeNote.value.blocks.push({
-                    id: Date.now(),
-                    text: newMessage.value.trim(),
-                    type: 'text',
-                    timestamp: Date.now(),
-                    isEditing: false
+                    id: Date.now(), 
+                    text: newMessage.value.trim(), 
+                    type: 'text', 
+                    timestamp: Date.now(), 
+                    isEditing: false,
+                    isDone: false // Local task state
                 });
-                activeNote.value.timestamp = Date.now(); // bump last edited
+                activeNote.value.timestamp = Date.now();
                 newMessage.value = '';
-                nextTick(() => {
-                    autoResizeInput();
-                    scrollToBottom();
-                    messageInput.value?.focus();
-                });
+                nextTick(() => { autoResizeInput(); scrollToBottom(); messageInput.value?.focus(); });
+            };
+
+            const handlePaste = (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.includes('image')) {
+                        const blob = item.getAsFile();
+                        processImageFile(blob);
+                    }
+                }
+            };
+
+            const processImageFile = (file) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 1200;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        canvas.width = width; canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        activeNote.value.blocks.push({
+                            id: Date.now(), type: 'image', data: dataUrl, text: 'Image', timestamp: Date.now(), isDone: false
+                        });
+                        scrollToBottom();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) processImageFile(file);
+                e.target.value = '';
             };
 
             const renderBlock = (block) => {
@@ -380,144 +402,37 @@
                 return marked.parse(block.text || '');
             };
 
-            // --- Edit Logic ---
-            const enableEdit = (block) => {
-                block.isEditing = true;
-                nextTick(() => {
-                    // Find the textarea corresponding to this block
-                    // Implementation note: V-for creates refs, simple focus logic:
-                    // Using a ref function in template
-                });
-            };
-
-            const saveBlock = (block) => {
-                block.isEditing = false;
-            };
-            
-            const setTextareaHeight = (el) => {
-                if(!el) return;
-                el.style.height = 'auto';
-                el.style.height = el.scrollHeight + 'px';
-            };
-
-            const autoResizeInput = () => {
-                const el = messageInput.value;
-                if(el) {
-                    el.style.height = 'auto';
-                    el.style.height = Math.min(el.scrollHeight, 128) + 'px';
-                }
-            };
-
-            // --- Media Handlers ---
+            const enableEdit = (block) => { block.isEditing = true; };
+            const saveBlock = (block) => { block.isEditing = false; };
+            const setTextareaHeight = (el) => { if(!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+            const autoResizeInput = () => { const el = messageInput.value; if(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 128) + 'px'; } };
             const triggerImageUpload = () => imageInput.value.click();
             
-            const handleImageUpload = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                // Compress/Resize Logic (Basic Canvas) to save localstorage
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const MAX_WIDTH = 800;
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Compress
-                        
-                        activeNote.value.blocks.push({
-                            id: Date.now(),
-                            type: 'image',
-                            data: dataUrl,
-                            text: 'Image',
-                            timestamp: Date.now()
-                        });
-                        scrollToBottom();
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = ''; // reset
-            };
-
             const toggleRecording = async () => {
-                if (isRecording.value) {
-                    mediaRecorder.stop();
-                    isRecording.value = false;
-                } else {
+                if (isRecording.value) { mediaRecorder.stop(); isRecording.value = false; }
+                else {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         mediaRecorder = new MediaRecorder(stream);
                         audioChunks = [];
                         mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                         mediaRecorder.onstop = () => {
-                            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' }); // simplified type
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                             const reader = new FileReader();
                             reader.onload = (e) => {
-                                activeNote.value.blocks.push({
-                                    id: Date.now(),
-                                    type: 'audio',
-                                    data: e.target.result,
-                                    text: 'Voice Note',
-                                    timestamp: Date.now()
-                                });
+                                activeNote.value.blocks.push({ id: Date.now(), type: 'audio', data: e.target.result, text: 'Voice Note', timestamp: Date.now(), isDone: false });
                                 scrollToBottom();
                             };
                             reader.readAsDataURL(audioBlob);
                         };
-                        mediaRecorder.start();
-                        isRecording.value = true;
-                    } catch(e) {
-                        alert("Mic access denied");
-                    }
+                        mediaRecorder.start(); isRecording.value = true;
+                    } catch(e) { alert("Mic access denied"); }
                 }
             };
 
-            // --- Trash & Tools ---
-            const deleteActiveNote = () => {
-                if (activeNote.value.isDeleted) {
-                    // Permanent Delete
-                    if(confirm("Permanently delete?")) {
-                        notes.value = notes.value.filter(n => n.id !== activeNoteId.value);
-                        activeNoteId.value = null;
-                        showToast('Note deleted forever', '☠️');
-                    }
-                } else {
-                    // Soft Delete
-                    activeNote.value.isDeleted = true;
-                    activeNoteId.value = null;
-                    showToast('Moved to Trash', '🗑️');
-                }
-            };
-
-            const restoreNote = (note) => {
-                note.isDeleted = false;
-                showToast('Restored', '♻️');
-            };
-
-            const toggleSearch = () => {
-                searchMode.value = !searchMode.value;
-                if(searchMode.value) nextTick(() => searchInput.value?.focus());
-                else searchQuery.value = '';
-            };
-
-            const emptyTrash = () => {
-                if(confirm('Empty Trash? This cannot be undone.')) {
-                    notes.value = notes.value.filter(n => !n.isDeleted);
-                    showToast('Trash Emptied');
-                }
-            };
-
-            // --- Utils ---
+            const restoreNote = (note) => { note.isDeleted = false; showToast('Restored', '♻️'); };
+            const toggleSearch = () => { searchMode.value = !searchMode.value; if(searchMode.value) nextTick(() => searchInput.value?.focus()); else searchQuery.value = ''; };
+            const emptyTrash = () => { if(confirm('Empty Trash?')) { notes.value = notes.value.filter(n => !n.isDeleted); showToast('Trash Emptied'); } };
             const scrollToBottom = () => nextTick(() => { const el = document.getElementById('feed'); if (el) el.scrollTop = el.scrollHeight; });
             const focusInput = () => messageInput.value?.focus();
             const shouldShowDate = (i) => i === 0 || new Date(activeNote.value.blocks[i-1].timestamp).toLocaleDateString() !== new Date(activeNote.value.blocks[i].timestamp).toLocaleDateString();
@@ -526,23 +441,19 @@
 
             return {
                 folders, notes, activeNoteId, sidebarOpen, isDark, newMessage, messageInput, searchInput, imageInput,
-                filteredFolders, activeNote, searchMode, searchQuery, viewMode, trashNotes, editingFolderId, isRecording, toast,
-                appendMessage, openNote, shouldShowDate, formatDate, formatTime, renderBlock,
-                createFolder, deleteFolder, createNote, deleteActiveNote, restoreNote, emptyTrash,
+                filteredFolders, activeNote, searchMode, searchQuery, viewMode, editingFolderId, isRecording, toast,
+                appendMessage, openNote, shouldShowDate, formatDate, formatTime, renderBlock, handlePaste,
+                createFolder, deleteFolder, createNote, restoreNote, emptyTrash,
                 toggleSidebar, toggleSearch, toggleTheme: () => isDark.value = !isDark.value, setViewMode: (m) => viewMode.value = m,
                 toggleFolder: (id) => { const f = folders.value.find(x => x.id === id); if(f) f.expanded = !f.expanded; },
-                getFolderNotes, enableEdit, saveBlock, copyBlock: (t) => { navigator.clipboard.writeText(t); showToast('Copied to clipboard'); },
-                deleteBlock: (i) => { activeNote.value.blocks.splice(i, 1); showToast('Block deleted'); },
+                getFolderNotes, enableEdit, saveBlock, copyBlock: (t) => { navigator.clipboard.writeText(t); showToast('Copied'); },
+                deleteBlock: (i) => { activeNote.value.blocks.splice(i, 1); showToast('Deleted'); },
                 toggleNoteDone: (n) => n.isDone = !n.isDone,
                 toggleActiveNoteTodo: () => { if(activeNote.value) activeNote.value.isTodo = !activeNote.value.isTodo; },
                 triggerImageUpload, handleImageUpload, toggleRecording, setTextareaHeight, autoResizeInput, focusInput
             };
         }
     }).mount('#app');
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
-    }
 </script>
 </body>
 </html>
