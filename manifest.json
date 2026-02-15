@@ -1,0 +1,15 @@
+{
+  "name": "BC Notes",
+  "short_name": "Stream",
+  "start_url": "/",
+  "display": "standalone",
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
