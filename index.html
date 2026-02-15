@@ -257,36 +257,79 @@
             const activeNote = computed(() => notes.value.find(n => n.id === activeNoteId.value));
             const filteredFolders = computed(() => folders.value);
 
+            // Navigation and Quick Note Logic
             onMounted(() => {
-                // Initial history state to catch back button
-                history.replaceState({ view: 'library' }, '');
+                // Initialize history for mobile back behavior
+                if (window.innerWidth < 768) {
+                    history.replaceState({ view: 'library' }, '');
+                }
+
                 window.onpopstate = (event) => {
                     if (window.innerWidth < 768) {
-                        if (event.state?.view === 'note') {
-                            activeNoteId.value = event.state.id;
-                            sidebarOpen.value = false;
-                        } else {
-                            // Default back to library
+                        if (activeNoteId.value) {
                             activeNoteId.value = null;
+                            sidebarOpen.value = true;
+                        } else if (!sidebarOpen.value) {
                             sidebarOpen.value = true;
                         }
                     }
                 };
+
+                // Check for Quick Note Share Data from Android
+                const urlParams = new URLSearchParams(window.location.search);
+                const sharedData = urlParams.get('text') || urlParams.get('title');
+                if (sharedData) {
+                    handleQuickNote(sharedData);
+                    // Clear the URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
             });
 
             const openNote = (id) => {
                 activeNoteId.value = id;
-                // Auto-reset search mode
                 searchMode.value = false;
                 searchQuery.value = '';
 
                 if(window.innerWidth < 768) {
                     sidebarOpen.value = false;
-                    // Push state once so one back button click goes back to library
-                    history.replaceState({ view: 'note', id: id }, '');
-                    history.pushState({ view: 'note', id: id }, '');
+                    // Push state so back button doesn't exit app
+                    history.replaceState({ view: 'note', id }, '');
+                    history.pushState({ view: 'note', id }, '');
                 }
                 scrollToBottom();
+            };
+
+            const handleQuickNote = (text) => {
+                const today = new Date().toISOString().split('T')[0];
+                let qnFolder = folders.value.find(f => f.name === 'Quick Note');
+                if (!qnFolder) {
+                    qnFolder = { id: Date.now().toString(), name: 'Quick Note', expanded: true };
+                    folders.value.push(qnFolder);
+                }
+                let todayNote = notes.value.find(n => n.title === today && n.folderId === qnFolder.id);
+                if (!todayNote) {
+                    todayNote = { 
+                        id: (Date.now() + 1).toString(), 
+                        folderId: qnFolder.id, 
+                        title: today, 
+                        blocks: [], 
+                        isTodo: false, 
+                        isDone: false, 
+                        isDeleted: false, 
+                        timestamp: Date.now() 
+                    };
+                    notes.value.push(todayNote);
+                }
+                todayNote.blocks.push({ 
+                    id: Date.now(), 
+                    text, 
+                    type: 'text', 
+                    timestamp: Date.now(), 
+                    isEditing: false, 
+                    isDone: false 
+                });
+                showToast('Shared to Quick Note');
+                openNote(todayNote.id);
             };
 
             watch([folders, notes], () => {
@@ -299,38 +342,12 @@
                 localStorage.setItem('zs_t', val ? 'dark' : 'light');
             }, { immediate: true });
 
-            const toggleSidebar = (state) => {
-                sidebarOpen.value = state;
-            };
-
-            const showToast = (msg, icon='✓') => {
-                toast.value = { show: true, message: msg, icon };
-                setTimeout(() => toast.value.show = false, 3000);
-            };
-
-            const createFolder = () => {
-                const name = prompt('Folder Name:');
-                if(name) folders.value.push({id: Date.now().toString(), name, expanded: true});
-            };
-
-            const deleteFolder = (id) => {
-                if(confirm('Delete Folder? Notes will be moved to Trash.')) {
-                    notes.value.forEach(n => { if(n.folderId === id) n.isDeleted = true; });
-                    folders.value = folders.value.filter(f => f.id !== id);
-                    showToast('Folder deleted', '🗑️');
-                }
-            };
-
-            const createNote = (folderId) => {
-                const id = Date.now().toString();
-                notes.value.push({
-                    id, folderId, title: '', blocks: [], isTodo: false, isDone: false, isDeleted: false, timestamp: Date.now()
-                });
-                folders.value.find(f => f.id === folderId).expanded = true;
-                openNote(id);
-                nextTick(() => document.querySelector('header input')?.focus());
-            };
-
+            const toggleSidebar = (state) => { sidebarOpen.value = state; };
+            const showToast = (msg, icon='✓') => { toast.value = { show: true, message: msg, icon }; setTimeout(() => toast.value.show = false, 3000); };
+            const createFolder = () => { const name = prompt('Folder Name:'); if(name) folders.value.push({id: Date.now().toString(), name, expanded: true}); };
+            const deleteFolder = (id) => { if(confirm('Delete Folder?')) { notes.value.forEach(n => { if(n.folderId === id) n.isDeleted = true; }); folders.value = folders.value.filter(f => f.id !== id); } };
+            const createNote = (folderId) => { const id = Date.now().toString(); notes.value.push({ id, folderId, title: '', blocks: [], isTodo: false, isDone: false, isDeleted: false, timestamp: Date.now() }); openNote(id); nextTick(() => document.querySelector('header input')?.focus()); };
+            
             const getFolderNotes = (folderId) => {
                 return notes.value.filter(n => {
                     const matchesFolder = n.folderId === folderId;
@@ -344,12 +361,7 @@
             const appendMessage = () => {
                 if (!newMessage.value.trim() || !activeNote.value) return;
                 activeNote.value.blocks.push({
-                    id: Date.now(), 
-                    text: newMessage.value.trim(), 
-                    type: 'text', 
-                    timestamp: Date.now(), 
-                    isEditing: false,
-                    isDone: false // Local task state
+                    id: Date.now(), text: newMessage.value.trim(), type: 'text', timestamp: Date.now(), isEditing: false, isDone: false
                 });
                 activeNote.value.timestamp = Date.now();
                 newMessage.value = '';
@@ -361,8 +373,7 @@
                 for (let index in items) {
                     const item = items[index];
                     if (item.kind === 'file' && item.type.includes('image')) {
-                        const blob = item.getAsFile();
-                        processImageFile(blob);
+                        processImageFile(item.getAsFile());
                     }
                 }
             };
@@ -375,14 +386,12 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         const MAX_WIDTH = 1200;
-                        let width = img.width;
-                        let height = img.height;
+                        let width = img.width, height = img.height;
                         if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                         canvas.width = width; canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                         activeNote.value.blocks.push({
-                            id: Date.now(), type: 'image', data: dataUrl, text: 'Image', timestamp: Date.now(), isDone: false
+                            id: Date.now(), type: 'image', data: canvas.toDataURL('image/jpeg', 0.8), text: 'Image', timestamp: Date.now(), isDone: false
                         });
                         scrollToBottom();
                     };
@@ -391,22 +400,13 @@
                 reader.readAsDataURL(file);
             };
 
-            const handleImageUpload = (e) => {
-                const file = e.target.files[0];
-                if (file) processImageFile(file);
-                e.target.value = '';
-            };
-
-            const renderBlock = (block) => {
-                if(block.type === 'image') return `<img src="${block.data}" alt="Image">`;
-                return marked.parse(block.text || '');
-            };
-
+            const renderBlock = (block) => block.type === 'image' ? `<img src="${block.data}" alt="Image">` : marked.parse(block.text || '');
             const enableEdit = (block) => { block.isEditing = true; };
             const saveBlock = (block) => { block.isEditing = false; };
             const setTextareaHeight = (el) => { if(!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
             const autoResizeInput = () => { const el = messageInput.value; if(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 128) + 'px'; } };
             const triggerImageUpload = () => imageInput.value.click();
+            const handleImageUpload = (e) => { const file = e.target.files[0]; if (file) processImageFile(file); e.target.value = ''; };
             
             const toggleRecording = async () => {
                 if (isRecording.value) { mediaRecorder.stop(); isRecording.value = false; }
@@ -430,9 +430,7 @@
                 }
             };
 
-            const restoreNote = (note) => { note.isDeleted = false; showToast('Restored', '♻️'); };
             const toggleSearch = () => { searchMode.value = !searchMode.value; if(searchMode.value) nextTick(() => searchInput.value?.focus()); else searchQuery.value = ''; };
-            const emptyTrash = () => { if(confirm('Empty Trash?')) { notes.value = notes.value.filter(n => !n.isDeleted); showToast('Trash Emptied'); } };
             const scrollToBottom = () => nextTick(() => { const el = document.getElementById('feed'); if (el) el.scrollTop = el.scrollHeight; });
             const focusInput = () => messageInput.value?.focus();
             const shouldShowDate = (i) => i === 0 || new Date(activeNote.value.blocks[i-1].timestamp).toLocaleDateString() !== new Date(activeNote.value.blocks[i].timestamp).toLocaleDateString();
@@ -443,14 +441,14 @@
                 folders, notes, activeNoteId, sidebarOpen, isDark, newMessage, messageInput, searchInput, imageInput,
                 filteredFolders, activeNote, searchMode, searchQuery, viewMode, editingFolderId, isRecording, toast,
                 appendMessage, openNote, shouldShowDate, formatDate, formatTime, renderBlock, handlePaste,
-                createFolder, deleteFolder, createNote, restoreNote, emptyTrash,
+                createFolder, deleteFolder, createNote, emptyTrash: () => { if(confirm('Empty Trash?')) notes.value = notes.value.filter(n => !n.isDeleted); },
                 toggleSidebar, toggleSearch, toggleTheme: () => isDark.value = !isDark.value, setViewMode: (m) => viewMode.value = m,
                 toggleFolder: (id) => { const f = folders.value.find(x => x.id === id); if(f) f.expanded = !f.expanded; },
                 getFolderNotes, enableEdit, saveBlock, copyBlock: (t) => { navigator.clipboard.writeText(t); showToast('Copied'); },
-                deleteBlock: (i) => { activeNote.value.blocks.splice(i, 1); showToast('Deleted'); },
+                deleteBlock: (i) => { activeNote.value.blocks.splice(i, 1); },
                 toggleNoteDone: (n) => n.isDone = !n.isDone,
                 toggleActiveNoteTodo: () => { if(activeNote.value) activeNote.value.isTodo = !activeNote.value.isTodo; },
-                triggerImageUpload, handleImageUpload, toggleRecording, setTextareaHeight, autoResizeInput, focusInput
+                triggerImageUpload, handleImageUpload, toggleRecording, setTextareaHeight, autoResizeInput, focusInput, restoreNote: (n) => n.isDeleted = false
             };
         }
     }).mount('#app');
